@@ -32,7 +32,7 @@ Launching `conditional_take.nf` [scruffy_shannon] - revision: 1e3507df3d
 If we were to run the pipeline without the `--dev` flag, it prints all the numbers from 1 to 300:
 ```
 N E X T F L O W  ~  version 19.09.0-edge
-Launching `conditional_take.nf` [scruffy_shannon] - revision: 1e3507df3d
+Launching 'conditional_take.nf' [scruffy_shannon] - revision: 1e3507df3d
 1
 2
 3
@@ -85,7 +85,7 @@ Let's run it:
 
 ```
 N E X T F L O W  ~  version 19.09.0-edge
-Launching `do_you_have_a_minute_to_talk_about_publishdir.nf` [mad_mestorf] - revision: d436b24a1c
+Launching 'do_you_have_a_minute_to_talk_about_publishdir.nf' [mad_mestorf] - revision: d436b24a1c
 executor >  local (2)
 [92/97d75e] process > someprocess (2) [100%] 2 of 2 ✔
 ```
@@ -105,4 +105,108 @@ Note that you could also publish the same file multiple times, which can be usef
 Finally, by default publishDir makes a symbolic link but you can also have the files copied, hard-linked, or even moved. 
 The latter is not recommended because it breaks reruns.
 
+## 3. Making a custom config file within a process
+Some software requires a custom config file. 
+Now while of course we could require our end-user to supply a config file to our pipeline, if possible, we'd like to automate that - it usually just adds unnecessary complexity to workflows that we want to hide from the user.
 
+Let's break the code for this example up into bits.
+First the input:
+```
+Channel
+    .from([[
+           ['strain_1', 'strain_2'],
+           [file('lmao_this_file_name_is_a_mess_strain1.fasta'), 
+            file('strain2_some_totally_random_filename.fasta')]
+           ]])
+    .set {input_ch}
+```
+A common reason why tools require you to specify some config file is them having multiple input files. 
+Here our `input_ch` consist of some genome names (strain\_1 and strain\_2) and their associated fasta files which are required for our example config file format.
+
+Having a separate name for a genome could be necessary because filenames can include forbidden characters for some output file format.
+An example would be parentheses in genome names being forbidden in Newick files because they have syntactic meaning.
+
+
+```
+process software_that_requires_as_custom_config {
+    publishDir "custom_config"
+    input:
+    set val(genome_names), file(genome_fastas) from input_ch
+    output:
+    file(custom_config) into output_ch
+```
+The first portion of this process definition is just the usual - input channels and output channels and for convenience of the example, a publishDir.
+
+In the script part we first transpose the `genome_names` and `genome_fastas` to get a list of lists in which each name is paired up with its corresponding fasta file.
+
+*Building a multi-line Groovy string --> one-line bash string*
+Here is what we want our final config file to look like:
+```
+$ cat custom_config/custom.config
+#list of all our genome_names and genome_fastas:
+strain_1 = lmao_this_file_name_is_a_mess_strain1.fasta
+strain_2 = strain2_some_totally_random_filename.fasta
+```
+We build the text of our config file into a variable `config_file`.
+The intent here is to make a one-line string that we can printf into our config file.
+
+We indent it to make it more readable and strip those indents again with `stripIndents`. 
+Note that this will only work if the indents are the same for every line
+ - it's crucial that the first line of this multiline string only has the """ and nothing else.
+Otherwise `stripIndents` would count this multiline string as not indented.
+
+An additional gotcha is that this multiline Groovy string should eventually turn into one line in bash. 
+As a result, to get a `\n` (newline character for printf) in our bash script, we have to write `\\n` in our Groovy script.
+
+
+Then we can use `collect` to add a custom string for each name \& fasta pairing to our config file.
+
+This produces a list and we don't want the `[]` to end up in our string, so we additionally use `join` to concatenate all the list items into a string.
+
+Finally the whole string needs to be split by newline (this is the Groovy newlines, not our `\\n`) and joined again.
+
+The actual bash portion of this script just `printf`s the contents of our one-line string into our config file.
+```
+    script:
+    custom_config = 'custom.config'
+    name_fasta_pairing = [genome_names, genome_fastas.collect()].transpose() // these are now organized like this: [[name1, fasta1], [name2, fasta2]]
+    config_file = """
+                  #list of all our genome_names and genome_fastas:\\n
+                  ${name_fasta_pairing.collect{"${it[0]} = ${it[1]}\\n"}.join()}
+    """.stripIndent().split('\n').join('')
+    """
+    printf '$config_file' >> $custom_config
+    """
+}
+```
+Now you may wonder why we needed to go through all the nonsense of escaping bash syntax in our Groovy string - why not make a Groovy string and write directly to a file using Groovy?
+
+The problem here lies with where this Groovy code gets executed. 
+The following would create a the config file in the directory from where we run the workflow, rather than inside the work directory:
+```
+    config_file = """
+                  #list of all our genome_names and genome_fastas:
+                  ${name_fasta_pairing.collect{"${it[0]} = ${it[1]}\n"}.join()}
+    """.stripIndent()
+    file(custom_config) << config_file
+```
+This leads to problems because the file would be overwritten every run, so for now our clunky solution has to do.
+
+Let's run it:
+`nextflow run write_custom_config_files_within_process.nf`
+
+```
+N E X T F L O W  ~  version 19.09.0-edge
+Launching 'write_custom_config_files_within_process.nf' [special_cuvier] - revision: 08a6a5850d
+executor >  local (1)
+[1b/a693d8] process > software_that_requi... [100%] 1 of 1 ✔
+```
+And it looks just how we wanted it:
+```
+$ cat custom_config/custom.config
+#list of all our genome_names and genome_fastas:
+strain_1 = lmao_this_file_name_is_a_mess_strain1.fasta
+strain_2 = strain2_some_totally_random_filename.fasta
+```
+
+I  hope this article was informative and you learned at least one new thing.

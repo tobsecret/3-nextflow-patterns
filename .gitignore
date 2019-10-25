@@ -3,3 +3,5 @@ work
 .nextflow*
 fruits
 pastries
+*.fasta
+custom_config
