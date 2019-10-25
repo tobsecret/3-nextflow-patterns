@@ -1,5 +1,5 @@
-# 5-nextflow-patterns
-This repo contains code snippets and markdown illustrating 5 useful Nextflow patterns.
+# 3-nextflow-patterns
+This repo contains code snippets and markdown illustrating 3 useful Nextflow patterns.
 
 ## 1. Reducing the number of input files during development
 Commonly when developing a pipeline, we do not want to run it on all data at once. 
