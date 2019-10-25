@@ -140,6 +140,7 @@ The first portion of this process definition is just the usual - input channels 
 In the script part we first transpose the `genome_names` and `genome_fastas` to get a list of lists in which each name is paired up with its corresponding fasta file.
 
 *Building a multi-line Groovy string --> one-line bash string*
+
 Here is what we want our final config file to look like:
 ```
 $ cat custom_config/custom.config
@@ -152,7 +153,7 @@ The intent here is to make a one-line string that we can printf into our config 
 
 We indent it to make it more readable and strip those indents again with `stripIndents`. 
 Note that this will only work if the indents are the same for every line
- - it's crucial that the first line of this multiline string only has the """ and nothing else.
+\- it's crucial that the first line of this multiline string only has the """ and nothing else.
 Otherwise `stripIndents` would count this multiline string as not indented.
 
 An additional gotcha is that this multiline Groovy string should eventually turn into one line in bash. 
