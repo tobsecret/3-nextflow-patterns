@@ -1,9 +1,14 @@
-# 3-nextflow-patterns
-This repo contains code snippets and markdown illustrating 3 useful Nextflow patterns.
+# Three useful Nextflow patterns
+In this article I'll go over three Nextflow patterns I frequently use to make development of Nextflow data processing pipelines easier and faster. I use each of these in most of my workflows, so they really come in handy. 
+
+I am assuming here that you know what processes, channels, strings, directives and operators are and are somewhat comfortable writing Groovy and Nextflow code. If you want further details on any of the topics I am touching on in this article, check out the [Nextflow documentation](https://www.nextflow.io/docs/latest/index.html) for explanation of all these concepts and more. 
+
+Let's start with the first one, that probably gives you the biggest speedup for developing your pipelines.
 
 ## 1. Reducing the number of input files during development
-Commonly when developing a pipeline, we do not want to run it on all data at once. 
-Instead, I like using the `take` operator on my main channel of inputs, only letting a set number of items through the channel.
+Commonly when developing a pipeline, we do not want to run it on all data at once. This way it runs (and fails!) quickly, so we can develop it more quickly! Then when we are happy with our pipeline, we can run all of our data through it.
+
+Instead, I like using the [`take` operator](https://www.nextflow.io/docs/latest/operator.html#take) on my main channel of inputs, only letting a set number of items through the channel.
 Because I do not want this to always be the case, I make it conditional on a params variable `params.dev`.
 Any variable specified as `params.somevariable` can be set to `somevalue` on the commandline by invoking `nextflow run pipeline.nf --variable somevalue`.
 ```
@@ -43,7 +48,7 @@ Launching 'conditional_take.nf' [scruffy_shannon] - revision: 1e3507df3d
 ## 2. Collecting output files of a process with publishDir
 Nextflow frees us from thinking about where files produced by a process end up and making sure they are available for the next process that uses them. 
 However, often we want to see files output by a process without having to dig into the work directory. 
-For this we use the `publishDir` directive in our process to tell Nextflow in which directory we want to publish our files that are tracked in the `output:` channel(s) of the process. 
+For this we use the [`publishDir` directive](https://www.nextflow.io/docs/latest/process.html#publishdir) in our process to tell Nextflow in which directory we want to publish our files that are tracked in the `output:` channel(s) of the process. 
 
 **publishDir** is the NUMBER ONE THING new users ask for on the Nextflow [gitter channel](https://gitter.im/nextflow-io/nextflow) because we are so used to having to track where files are manually.
 
@@ -106,6 +111,8 @@ Finally, by default publishDir makes a symbolic link but you can also have the f
 The latter is not recommended because it breaks reruns.
 
 ## 3. Making a custom config file within a process
+For this section, I am assuming you know how string interpolation in Groovy works, if not, click the [link](https://www.nextflow.io/docs/latest/script.html#strings) for a little refresher.
+
 Some software requires a custom config file. 
 Now while of course we could require our end-user to supply a config file to our pipeline, if possible, we'd like to automate that - it usually just adds unnecessary complexity to workflows that we want to hide from the user.
 
