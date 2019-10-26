@@ -1,7 +1,7 @@
 # Three useful Nextflow patterns
 In this article I'll go over three Nextflow patterns I frequently use to make development of Nextflow data processing pipelines easier and faster. I use each of these in most of my workflows, so they really come in handy. 
 
-I am assuming here that you know what processes, channels, strings, directives and operators are and are somewhat comfortable writing Groovy and Nextflow code. If you want further details on any of the topics I am touching on in this article, check out the [Nextflow documentation](https://www.nextflow.io/docs/latest/index.html) for explanation of all these concepts and more. 
+I am assuming here that you know what processes, channels, strings, closures, directives and operators are and are somewhat comfortable writing Groovy and Nextflow code. If you want further details on any of the topics I am touching on in this article, check out the [Nextflow documentation](https://www.nextflow.io/docs/latest/index.html) for explanation of all these concepts and more. 
 
 Let's start with the first one, that probably gives you the biggest speedup for developing your pipelines.
 
@@ -54,7 +54,7 @@ For this we use the [`publishDir` directive](https://www.nextflow.io/docs/latest
 
 The `publishDir` directive takes a directory relative to where we are running the pipeline from. 
 We can also give it a glob `pattern` to specify files with which extensions should be published. 
-Although it's not explicitly mentioned in the documentation, we can specify `publishDir` multiple times, which can be useful if a process produces multiple types of files and we want to publish several different groupings of the same files.
+Although it's not explicitly mentioned in the documentation, we can specify `publishDir` multiple times for the same process, which can be useful if a process produces multiple types of files and we want to publish several different groupings of the same files.
 Also useful, `publishDir` allows us to provide a closure to specify the path/ filename a file should be `saveAs` (relative to the publishDir), given the name of the file.
 
 This last one is a bit tricky because the closure does not get passed a file object but just a string.
@@ -107,8 +107,8 @@ tarte.fruit.pastry
 Perfect, this is what we specified the two separate `publishDir` directives for - see the fruits only have one extension whereas the pastries retained all of theirs.
 Note that you could also publish the same file multiple times, which can be useful in some instances.
 
-Finally, by default publishDir makes a symbolic link but you can also have the files copied, hard-linked, or even moved. 
-The latter is not recommended because it breaks reruns.
+Finally, by default publishDir  makes a symbolic link [(see mode in the publishDir section of the docs)](https://www.nextflow.io/docs/latest/process.html#publishdir) but you can also have the files copied, hard-linked, or even moved.
+The latter is not recommended because it breaks reruns. 
 
 ## 3. Making a custom config file within a process
 For this section, I am assuming you know how string interpolation in Groovy works, if not, click the [link](https://www.nextflow.io/docs/latest/script.html#strings) for a little refresher.
@@ -146,7 +146,7 @@ The first portion of this process definition is just the usual - input channels 
 
 In the script part we first transpose the `genome_names` and `genome_fastas` to get a list of lists in which each name is paired up with its corresponding fasta file.
 
-*Building a multi-line Groovy string --> one-line bash string*
+**Building a multi-line Groovy string --> one-line bash string**
 
 Here is what we want our final config file to look like:
 ```
@@ -190,7 +190,7 @@ The actual bash portion of this script just `printf`s the contents of our one-li
 Now you may wonder why we needed to go through all the nonsense of escaping bash syntax in our Groovy string - why not make a Groovy string and write directly to a file using Groovy?
 
 The problem here lies with where this Groovy code gets executed. 
-The following would create a the config file in the directory from where we run the workflow, rather than inside the work directory:
+The following would create the config file in the directory from where we run the workflow, rather than inside the work directory:
 ```
     config_file = """
                   #list of all our genome_names and genome_fastas:
