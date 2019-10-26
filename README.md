@@ -10,7 +10,7 @@ Commonly when developing a pipeline, we do not want to run it on all data at onc
 
 Instead, I like using the [`take` operator](https://www.nextflow.io/docs/latest/operator.html#take) on my main channel of inputs, only letting a set number of items through the channel.
 Because I do not want this to always be the case, I make it conditional on a params variable `params.dev`.
-Any variable specified as `params.somevariable` can be set to `somevalue` on the commandline by invoking `nextflow run pipeline.nf --variable somevalue`.
+Any variable specified as `params.somevariable` can be set to `somevalue` on the commandline by invoking `nextflow run pipeline.nf --somevariable somevalue`.
 ```
 params.dev = false
 params.number_of_inputs = 2
