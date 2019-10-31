@@ -21,7 +21,7 @@ Channel
 ```
 *Explanation:*
 This example snippet first fills a channel with the numbers from 1 to 300.
-Then either `params.number_of_inputs` many of those numbers (here by default 2) or all of them (when `params.dev` is `false` and take receives -1 as input), and prints the numbers that make it through.
+Then either `params.number_of_inputs` many of those numbers (here by default 2) or all of them (when `params.dev` is `false` and take receives -1 as input) are let through by the `take` operator, and those numbers that make it through are printed.
 
 In this example `params.dev` is by default `false`, so when developing a pipeline, we simply add the `--dev` flag to set it to true, like so:
 
